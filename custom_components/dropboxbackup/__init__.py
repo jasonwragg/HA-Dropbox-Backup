@@ -1,16 +1,25 @@
+"""Module for Dropbox integration with Home Assistant."""
+
 from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 
-async def async_setup(hass: HomeAssistant, config: dict):
+
+async def async_setup(hass: HomeAssistant, _config: dict):
+    """async setup"""
     return True
 
+
 async def async_setup_entry(hass: HomeAssistant, entry):
+    """Set up Dropbox from a config entry."""
+    # Save the data
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     # Notify any Backup listeners
     for listener in hass.data.get(f"{DOMAIN}_listeners", []):
         listener()
     return True
 
+
 async def async_unload_entry(hass, entry):
+    """Unload a config entry."""
     hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
