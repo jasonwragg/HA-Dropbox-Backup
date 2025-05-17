@@ -11,6 +11,7 @@ async def async_setup(hass: HomeAssistant, _config: dict):
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up Dropbox from a config entry."""
+    # Save the data
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
     # Notify any Backup listeners
     for listener in hass.data.get(f"{DOMAIN}_listeners", []):
