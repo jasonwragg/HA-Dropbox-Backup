@@ -1,11 +1,12 @@
 {
   "domain": "dropboxbackup",
   "name": "Dropbox Backup",
-  "version": "1.0.0",
-  "documentation": "https://github.com/jasonwragg/HA-Dropbox-Backup",
-  "requirements": ["dropbox"],
-  "dependencies": [],
+  "codeowners": ["@jasonwragg"],
   "config_flow": true,
-  "homeassistant": "2025.1.0"
+  "documentation": "https://github.com/jasonwragg/HA-Dropbox-Backup",
+  "dependencies": [],
+  "homeassistant": "2025.1.0",
+  "requirements": ["dropbox"],
+  "version": "1.0.0"
 }
 
