@@ -92,7 +92,7 @@ class DropboxBackupAgent(BackupAgent):
             stream = await open_stream()
 
             # 2) Read the first chunk and start a session
-            first_chunk = await stream.anext()  # get first async chunk
+            first_chunk = await stream.__anext__()  # get first async chunk
             session_start_res = await self.hass.async_add_executor_job(
                 self.dbx.files_upload_session_start, first_chunk
             )
