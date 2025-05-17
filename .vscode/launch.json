@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Home Assistant",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "module": "homeassistant",
             "justMyCode": false,
@@ -19,7 +19,7 @@
         {
             // Example of attaching to my production server
             "name": "Python: Attach Remote",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "port": 5678,
             "host": "localhost",

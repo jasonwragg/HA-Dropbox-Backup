@@ -1,8 +1,8 @@
 {
-  "domain": "backup_dropbox",
-  "name": "Backup to Dropbox",
+  "domain": "dropboxbackup",
+  "name": "Dropbox Backup",
   "version": "1.0.0",
-  "documentation": "https://github.com/your-repo/backup_dropbox",
+  "documentation": "https://github.com/jasonwragg/HA-Dropbox-Backup",
   "requirements": ["dropbox"],
   "dependencies": [],
   "config_flow": true,
