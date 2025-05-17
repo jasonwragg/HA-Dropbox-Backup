@@ -1,0 +1,3 @@
+homeassistant>=2025.1.0
+ruff
+pre-commit

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "minor_version": 8,
+  "key": "core.device_registry",
+  "data": {
+    "devices": [
+      {"area_id":null,"config_entries":["01JVESBETCP99Y592Q1K1WSCND"],"configuration_url":"https://www.met.no/en","connections":[],"created_at":"2025-05-17T09:31:40.026967+00:00","disabled_by":null,"entry_type":"service","hw_version":null,"id":"11231d774b981609d97e0f376b2ea6a5","identifiers":[["met","01JVESBETCP99Y592Q1K1WSCND"]],"labels":[],"manufacturer":"Met.no","model":"Forecast","model_id":null,"modified_at":"2025-05-17T09:31:40.026989+00:00","name_by_user":null,"name":"Forecast","primary_config_entry":"01JVESBETCP99Y592Q1K1WSCND","serial_number":null,"sw_version":null,"via_device_id":null},
+      {"area_id":null,"config_entries":["01JVESBGT79N4EEMF3Q7SM06XH"],"configuration_url":null,"connections":[],"created_at":"2025-05-17T09:31:41.837647+00:00","disabled_by":null,"entry_type":"service","hw_version":null,"id":"2f2c6ec8ea11ea6fc54d2a1df232147e","identifiers":[["sun","01JVESBGT79N4EEMF3Q7SM06XH"]],"labels":[],"manufacturer":null,"model":null,"model_id":null,"modified_at":"2025-05-17T09:31:41.837668+00:00","name_by_user":null,"name":"Sun","primary_config_entry":"01JVESBGT79N4EEMF3Q7SM06XH","serial_number":null,"sw_version":null,"via_device_id":null}
+    ],
+    "deleted_devices": []
+  }
+}
