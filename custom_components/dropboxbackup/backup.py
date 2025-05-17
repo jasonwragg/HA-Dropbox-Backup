@@ -1,21 +1,20 @@
 """Dropbox Backup Agent for Home Assistant."""
 
-"""This module provides a BackupAgent implementation that interacts with Dropbox """
-"""to list, upload, download, and delete backup files in a configured Dropbox folder."""
-
 import logging
-import dropbox
 import urllib.parse
-from collections.abc import AsyncIterator
+import dropbox
 from dropbox.files import FileMetadata
 from homeassistant.components.backup import BackupAgent, BackupAgentError, AgentBackup
 from homeassistant.core import HomeAssistant, callback
 from .const import DOMAIN, CONF_ACCESS_TOKEN, CONF_FOLDER
 
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class DropboxBackupAgent(BackupAgent):
+    """This module provides a BackupAgent implementation that interacts with Dropbox to list, upload, download, and delete backup files in a configured Dropbox folder."""
+
     domain = DOMAIN
     name = "Dropbox"
     unique_id = "dropbox_backup"
@@ -77,27 +76,23 @@ class DropboxBackupAgent(BackupAgent):
             )
             raise BackupAgentError from err
 
-    """Upload a backup to Dropbox. """
-    """This method uploads a backup file to the configured Dropbox folder."""
-
     async def async_upload_backup(self, *, open_stream, backup, **kwargs) -> None:
-        """
-        Uploads a snapshot in chunks using Dropbox upload sessions.
-        """
+        """Uploads a snapshot in chunks using Dropbox upload sessions."""
+
         # Decode the HA UI ID back to a valid path
         decoded = urllib.parse.unquote(backup.backup_id)
         path = f"/{decoded}"
         _LOGGER.debug("Uploading large backup to %s in chunks", path)
 
         # Dropbox recommends 150 MB chunks max; choose e.g. 8 MB:
-        CHUNK_SIZE = 8 * 1024 * 1024
+        # CHUNK_SIZE = 8 * 1024 * 1024
 
         try:
             # 1) Open the HA snapshot stream
             stream = await open_stream()
 
             # 2) Read the first chunk and start a session
-            first_chunk = await stream.__anext__()  # get first async chunk
+            first_chunk = await stream.anext()  # get first async chunk
             session_start_res = await self.hass.async_add_executor_job(
                 self.dbx.files_upload_session_start, first_chunk
             )
@@ -203,6 +198,8 @@ class DropboxBackupAgent(BackupAgent):
 
 
 async def async_get_backup_agents(hass: HomeAssistant):
+    """Gets the backup agents"""
+
     agents = []
     for entry in hass.config_entries.async_entries(DOMAIN):
         token = entry.data[CONF_ACCESS_TOKEN]
@@ -212,7 +209,9 @@ async def async_get_backup_agents(hass: HomeAssistant):
 
 
 @callback
-def async_register_backup_agents_listener(hass: HomeAssistant, *, listener, **kwargs):
+def async_register_backup_agents_listener(hass: HomeAssistant, *, listener):
+    """Async call to get agaent listeners"""
+
     hass.data.setdefault(f"{DOMAIN}_listeners", []).append(listener)
 
     def remove():
