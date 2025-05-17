@@ -28,6 +28,8 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 
 ### Via HACS
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jasonwragg&repository=HA-Dropbox-Backup&category=integration)
+
 1. In Home Assistant, open **HACS** in the sidebar.
 2. Click the **⋮** menu (top right) and select **Custom repositories**.
 3. Add this repository:
