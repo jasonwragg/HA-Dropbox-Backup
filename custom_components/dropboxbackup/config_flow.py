@@ -16,7 +16,7 @@ DATA_SCHEMA = vol.Schema(
 class DropboxBackupFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Dropbox integration."""
 
-    VERSION = 3
+    VERSION = 4
 
     @staticmethod
     async def async_migrate_entry(hass, config_entry):
@@ -70,7 +70,7 @@ class DropboxBackupOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize options flow."""
-        super().__init__(config_entry)
+        self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Show the form to update token/folder."""
