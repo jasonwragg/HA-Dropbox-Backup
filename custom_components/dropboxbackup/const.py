@@ -1,7 +1,7 @@
 """Constants for the backup_dropbox integration."""
 
 # The domain of your integration. This should match the directory name.
-DOMAIN = "backup_dropbox"  # :contentReference[oaicite:0]{index=0}
+DOMAIN = "dropboxbackup"  # :contentReference[oaicite:0]{index=0}
 
 # Configuration keys for the Config Flow and stored entry data
 CONF_ACCESS_TOKEN = (

@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 class DropboxBackupAgent(BackupAgent):
     domain = DOMAIN
     name = "Dropbox"
-    unique_id = "dropbox_backup_agent"
+    unique_id = "dropbox_backup"
 
     def __init__(self, hass: HomeAssistant, token: str, folder: str):
         self.hass = hass
