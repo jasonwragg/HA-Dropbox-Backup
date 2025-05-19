@@ -2,54 +2,104 @@
 
 import logging
 import urllib.parse
-import dropbox
-from dropbox.files import FileMetadata
+
 from homeassistant.components.backup import BackupAgent, BackupAgentError, AgentBackup
 from homeassistant.core import HomeAssistant, callback
-from .const import DOMAIN, CONF_ACCESS_TOKEN, CONF_FOLDER
+from homeassistant.helpers.config_entry_oauth2_flow import (
+    async_get_config_entry_implementation,
+)
+from .const import DOMAIN, CONF_FOLDER
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class DropboxBackupAgent(BackupAgent):
-    """This module provides a BackupAgent implementation that interacts with Dropbox to list, upload, download, and delete backup files in a configured Dropbox folder."""
+    """This module provides a BackupAgent implementation that interacts with Dropbox to list."""
 
     domain = DOMAIN
     name = "Dropbox"
     unique_id = "dropbox_backup"
 
-    def __init__(self, hass: HomeAssistant, token: str, folder: str):
+    def __init__(self, hass, entry):
         self.hass = hass
-        self.dbx = dropbox.Dropbox(
-            token
-        )  # uses Dropbox Python SDK :contentReference[oaicite:10]{index=10}
-        self.folder = folder.strip("/")
+        self.entry = entry
+        self.folder = entry.data.get(CONF_FOLDER, "").strip("/")
+        self._dbx = None
+
+    async def _get_dbx(self):
+        """Return a Dropbox client, refreshing the token if needed."""
+        if self._dbx:
+            _LOGGER.debug("Using cached Dropbox client")  # ①
+            return self._dbx
+
+        # 1) Get HA’s OAuth2 implementation
+        impl = await async_get_config_entry_implementation(self.hass, self.entry)
+        _LOGGER.debug("Got OAuth2 impl: %s", impl)  # ②
+
+        # 2) Show entire config entry data
+        _LOGGER.debug("Config entry data: %s", self.entry.data)  # ③
+
+        # 3) Pull token dict from entry.data
+        token_data = self.entry.data.get("token")
+        _LOGGER.debug("Token dict before refresh: %s", token_data)  # ④
+
+        if not token_data:
+            _LOGGER.error("No token_data found under entry.data['token']")  # ⑤
+            raise BackupAgentError("OAuth2 token not found in config entry")
+
+        try:
+            # 4) Refresh token (new signature takes only token_data)
+            session = await impl.async_refresh_token(token_data)
+            _LOGGER.debug("Session returned by async_refresh_token: %s", session)  # ⑥
+        except Exception as e:
+            _LOGGER.error("async_refresh_token failed: %s", e, exc_info=True)  # ⑦
+            raise
+
+        access_token = session.get("access_token")
+        _LOGGER.debug("Using access_token: %s…", access_token[:8])  # ⑧
+
+        # 5) Lazy-import Dropbox SDK
+        import dropbox
+
+        self._dbx = dropbox.Dropbox(oauth2_access_token=access_token)  # ⑨
+        _LOGGER.info("Dropbox client instantiated successfully")  # ⑩
+        return self._dbx
 
     async def async_list_backups(self, **kwargs) -> list[AgentBackup]:
+        """List all backups in the configured Dropbox folder."""
+        # Build the Dropbox path
         folder = self.folder.strip("/") if self.folder else ""
         dbx_path = f"/{folder}" if folder else ""
         all_entries = []
 
         try:
+            # Lazily get a valid Dropbox client (with a fresh token)
+            dbx = await self._get_dbx()
+
+            # List the first page
             result = await self.hass.async_add_executor_job(
-                self.dbx.files_list_folder, dbx_path
+                dbx.files_list_folder, dbx_path
             )
             all_entries.extend(result.entries)
+
+            # Continue paging until done
             while result.has_more:
                 result = await self.hass.async_add_executor_job(
-                    self.dbx.files_list_folder_continue, result.cursor
+                    dbx.files_list_folder_continue, result.cursor
                 )
                 all_entries.extend(result.entries)
 
+            # Convert to HA AgentBackup objects
             backups: list[AgentBackup] = []
             for entry in all_entries:
+                # Lazy‐check FileMetadata
+                from dropbox.files import FileMetadata
+
                 if not isinstance(entry, FileMetadata):
                     continue
 
-                # strip leading slash for HA’s ID
                 ui_id = entry.path_lower.lstrip("/")
-
                 backups.append(
                     AgentBackup(
                         addons=[],
@@ -78,42 +128,47 @@ class DropboxBackupAgent(BackupAgent):
 
     async def async_upload_backup(self, *, open_stream, backup, **kwargs) -> None:
         """Uploads a snapshot in chunks using Dropbox upload sessions."""
-
         # Decode the HA UI ID back to a valid path
         decoded = urllib.parse.unquote(backup.backup_id)
         path = f"/{decoded}"
         _LOGGER.debug("Uploading large backup to %s in chunks", path)
 
-        # Dropbox recommends 150 MB chunks max; choose e.g. 8 MB:
-        # CHUNK_SIZE = 8 * 1024 * 1024
-
         try:
+            # Lazily get a fresh Dropbox client
+            dbx = await self._get_dbx()
+
             # 1) Open the HA snapshot stream
             stream = await open_stream()
 
             # 2) Read the first chunk and start a session
             first_chunk = await stream.__anext__()  # get first async chunk
-            session_start_res = await self.hass.async_add_executor_job(
-                self.dbx.files_upload_session_start, first_chunk
+            session_start = await self.hass.async_add_executor_job(
+                dbx.files_upload_session_start, first_chunk
             )
-            session_id = session_start_res.session_id
+            session_id = session_start.session_id
             offset = len(first_chunk)
 
-            # 3) Append all full chunks
+            # 3) Append all subsequent chunks
+            from dropbox.files import UploadSessionCursor
+
             async for chunk in stream:
+                cursor = UploadSessionCursor(session_id, offset)
                 await self.hass.async_add_executor_job(
-                    self.dbx.files_upload_session_append_v2,
+                    dbx.files_upload_session_append_v2,
                     chunk,
-                    dropbox.files.UploadSessionCursor(session_id, offset),
+                    cursor,
                 )
                 offset += len(chunk)
 
             # 4) Finish the session, committing to the target path
-            commit = dropbox.files.CommitInfo(path)
+            from dropbox.files import CommitInfo
+
+            commit = CommitInfo(path)
+            cursor = UploadSessionCursor(session_id, offset)
             await self.hass.async_add_executor_job(
-                self.dbx.files_upload_session_finish,
+                dbx.files_upload_session_finish,
                 b"",  # no extra data since all appended
-                dropbox.files.UploadSessionCursor(session_id, offset),
+                cursor,
                 commit,
             )
 
@@ -138,9 +193,10 @@ class DropboxBackupAgent(BackupAgent):
         _LOGGER.debug("Starting Dropbox download for %s", path)
 
         try:
+            dbx = await self._get_dbx()
             # Download the full content in a thread
             metadata, response = await self.hass.async_add_executor_job(
-                self.dbx.files_download, path
+                dbx.files_download, path
             )
             content = response.content
         except Exception as err:
@@ -162,7 +218,8 @@ class DropboxBackupAgent(BackupAgent):
         path = f"/{backup_id}"
         _LOGGER.debug("Deleting Dropbox backup %s", path)
         try:
-            await self.hass.async_add_executor_job(self.dbx.files_delete_v2, path)
+            dbx = await self._get_dbx()
+            await self.hass.async_add_executor_job(dbx.files_delete_v2, path)
         except Exception as err:
             _LOGGER.error("Dropbox delete failed for %s: %s", path, err, exc_info=True)
             raise BackupAgentError from err
@@ -174,9 +231,8 @@ class DropboxBackupAgent(BackupAgent):
         path = f"/{decoded}"
         _LOGGER.debug("Decoded backup_id %s → %s", backup_id, path)
         try:
-            meta = await self.hass.async_add_executor_job(
-                self.dbx.files_get_metadata, path
-            )
+            dbx = await self._get_dbx()
+            meta = await self.hass.async_add_executor_job(dbx.files_get_metadata, path)
             return AgentBackup(
                 addons=[],
                 backup_id=backup_id,
@@ -198,13 +254,10 @@ class DropboxBackupAgent(BackupAgent):
 
 
 async def async_get_backup_agents(hass: HomeAssistant):
-    """Gets the backup agents"""
-
+    """Return all configured DropboxBackupAgent instances."""
     agents = []
     for entry in hass.config_entries.async_entries(DOMAIN):
-        token = entry.data[CONF_ACCESS_TOKEN]
-        folder = entry.data.get(CONF_FOLDER, "")
-        agents.append(DropboxBackupAgent(hass, token, folder))
+        agents.append(DropboxBackupAgent(hass, entry))
     return agents
 
 
@@ -214,6 +267,7 @@ def async_register_backup_agents_listener(hass: HomeAssistant, *, listener):
 
     hass.data.setdefault(f"{DOMAIN}_listeners", []).append(listener)
 
+    @callback
     def remove():
         hass.data[f"{DOMAIN}_listeners"].remove(listener)
 

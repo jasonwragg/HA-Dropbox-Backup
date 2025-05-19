@@ -11,6 +11,8 @@ scene: !include scenes.yaml
 
 logger:
   logs:
-    custom_components.backup_dropbox: debug
     dropbox: debug
     homeassistant.components.backup: debug
+    homeassistant.helpers.config_entry_oauth2_flow: debug # OAuth2 helper internals :contentReference[oaicite:0]{index=0}
+    homeassistant.components.application_credentials: debug # Application Credentials flow :contentReference[oaicite:1]{index=1}
+    custom_components.dropboxbackup: debug
