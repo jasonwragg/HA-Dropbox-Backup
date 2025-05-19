@@ -1,25 +1,25 @@
-"""Module for Dropbox integration with Home Assistant."""
+"""The Dropbox Backup integration."""
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN
+from homeassistant.components.backup import BackupAgent, BackupAgentError
+from .backup import async_register_backup_agents_listener
+from .const import DOMAIN, DATA_BACKUP_AGENT_LISTENERS
 
 
-async def async_setup(hass: HomeAssistant, _config: dict):
-    """async setup"""
-    return True
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Dropbox Backup and register for backup agent updates."""
 
+    # Notify function drives the BackupManager to reload agents
+    def _notify() -> None:
+        for listener in hass.data.get(DATA_BACKUP_AGENT_LISTENERS, []):
+            listener()
 
-async def async_setup_entry(hass: HomeAssistant, entry):
-    """Set up Dropbox from a config entry."""
-    # Save the data
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
-    # Notify any Backup listeners
-    for listener in hass.data.get(f"{DOMAIN}_listeners", []):
-        listener()
-    return True
+    # Register and ensure cleanup
+    remove = async_register_backup_agents_listener(hass, listener=_notify)
+    entry.async_on_unload(remove)
 
+    # Fire immediately to register your agent
+    _notify()
 
-async def async_unload_entry(hass, entry):
-    """Unload a config entry."""
-    hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
