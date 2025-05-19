@@ -1,7 +1,6 @@
 {
   "domain": "dropboxbackup",
   "name": "Dropbox Backup",
-  "backup": true,
   "codeowners": ["@jasonwragg"],
   "config_flow": true,
   "dependencies": ["application_credentials"],
@@ -9,7 +8,7 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/jasonwragg/HA-Dropbox-Backup/issues",
   "requirements": ["dropbox>=11.0.0"],
-  "version": "1.0.2",
+  "version": "1.0.5",
   "auth": [
     { "name": "dropbox", "type": "oauth2" }
   ]
