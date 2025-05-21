@@ -51,7 +51,13 @@ class DropboxBackupAgent(BackupAgent):
         try:
             # 4) Refresh token (new signature takes only token_data)
             session = await impl.async_refresh_token(token_data)
-            _LOGGER.debug("Session returned by async_refresh_token: %s", session)  # ⑥
+            _LOGGER.debug(
+                "Session returned by async_refresh_token: %s", session
+            )  # ⑥
+
+            # Persist the refreshed token so future calls use the new values
+            new_data = {**self.entry.data, "token": session}
+            self.hass.config_entries.async_update_entry(self.entry, data=new_data)
         except Exception as e:
             _LOGGER.error("async_refresh_token failed: %s", e, exc_info=True)  # ⑦
             raise
