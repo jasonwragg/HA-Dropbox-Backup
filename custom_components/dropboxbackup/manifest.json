@@ -8,8 +8,5 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/jasonwragg/HA-Dropbox-Backup/issues",
   "requirements": ["dropbox>=11.0.0"],
-  "version": "1.0.6",
-  "auth": [
-    { "name": "dropbox", "type": "oauth2" }
-  ]
+  "version": "1.0.7"
 }

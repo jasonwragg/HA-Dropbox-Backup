@@ -2,9 +2,9 @@
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.components.backup import BackupAgent, BackupAgentError
+
 from .backup import async_register_backup_agents_listener
-from .const import DOMAIN, DATA_BACKUP_AGENT_LISTENERS
+from .const import DATA_BACKUP_AGENT_LISTENERS
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
