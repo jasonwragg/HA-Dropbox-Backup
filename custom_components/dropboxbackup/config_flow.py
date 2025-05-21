@@ -13,7 +13,7 @@ class DropboxOAuth2FlowHandler(AbstractOAuth2FlowHandler, domain=DOMAIN):
     """Handle OAuth2 for Dropbox Backup via Application Credentials."""
 
     DOMAIN = DOMAIN
-    CLIENT_ID = "dropbox"  # must match the 'auth' name in manifest.json
+    CLIENT_ID = "dropbox"  # must match the entry in application_credentials
     SCOPE = [
         "files.content.read",
         "files.content.write",
