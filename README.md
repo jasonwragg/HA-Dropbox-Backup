@@ -7,7 +7,7 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 ## Features
 
 - **Full BackupAgent Support**: Implements all core methods—`async_list_backups`, `async_upload_backup`, `async_download_backup`, `async_delete_backup`—integrating deeply with Home Assistant’s Backup system.
-- **Config Flow**: Securely enter your Dropbox OAuth token and optional target folder via the HA UI.
+- **Config Flow**: Authenticate with Dropbox using OAuth 2 via Home Assistant Application Credentials.
 - **Pagination Handling**: Correctly pages through Dropbox folder listings to show every snapshot.
 - **Error Logging**: Provides detailed debug logs for upload, download, and metadata operations.
 
@@ -16,7 +16,7 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 ## Requirements
 
 - **Home Assistant Core 2025.1+** (Backup Agents API introduced in 2025.1).
-- A Dropbox **Scoped Access** app with at least the following scopes enabled:
+- A Dropbox **Scoped Access** app with an App key and secret, and the following scopes enabled:
   - `files.content.write`
   - `files.content.read`
   - `files.metadata.read`.
@@ -52,7 +52,7 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 
 ## Configuration
 
-### 1. Create a Dropbox App & Access Token
+### 1. Create a Dropbox App
 
 1. Go to the [Dropbox App Console](https://www.dropbox.com/developers/apps).
 2. Click **Create app**, choose **Scoped access**, then select **App folder** or **Full Dropbox**.
@@ -60,14 +60,14 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
    - `files.content.write`
    - `files.content.read`
    - `files.metadata.read`.
-4. In **OAuth 2**, click **Generate access token** to get a long-lived token.
+4. Note your **App key** and **App secret** from the app overview page.
 
-### 2. Add the Integration
+### 2. Add Application Credentials and Authorize
 
-1. In Home Assistant, go to **Settings → System → Integrations**.
-2. Click **+ Add integration**, search **Dropbox Backup**, and select it.
-3. Paste your **Access Token** and optionally a **Folder** name (defaults to root).
-4. Click **Submit**, then **Finish**.
+1. In Home Assistant, open **Settings → System → Application Credentials**.
+2. Click **Add Credential**, set **Name** to `dropbox`, and enter your **App key** and **App secret**.
+3. Then open **Settings → System → Integrations**, click **+ Add integration**, search for **Dropbox Backup**, and follow the OAuth sign-in flow.
+4. After granting Dropbox access, click **Submit**, then **Finish**.
 
 ---
 
@@ -82,7 +82,7 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 
 ## Troubleshooting
 
-- **`missing_scope` errors**: Your token lacks the required Dropbox scopes—regenerate it after enabling scopes in the App Console.
+- **`missing_scope` errors**: Ensure your Dropbox app has the required scopes enabled, then reauthorize the integration.
 - **No backups listed**: Verify the **Folder** path matches your Dropbox folder and contains `.tar` snapshots.
 - **UI 404 errors**: Avoid illegal characters in folder names and ensure IDs are URL-decoded properly.
 
