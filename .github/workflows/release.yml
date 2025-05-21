@@ -14,15 +14,17 @@ jobs:
       - name: "Checkout the repository"
         uses: actions/checkout@v4
         
+      - uses: dexwritescode/release-on-merge-action@v1
+        with:
+          version-increment-strategy: patch
+          generate-release-notes: true
+          
       - name: "Adjust version number"
         shell: "bash"
         run: |
           yq -i -o json '.version="${{ github.event.release.tag_name }}"' \
             "${{ github.workspace }}/custom_components/dropboxbackup/manifest.json"
             
-      - uses: dexwritescode/release-on-merge-action@v1
-        with:
-          version-increment-strategy: patch
-          generate-release-notes: true
+
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
