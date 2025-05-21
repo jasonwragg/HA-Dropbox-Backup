@@ -16,3 +16,5 @@ jobs:
         with:
           version-increment-strategy: patch
           generate-release-notes: true
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
