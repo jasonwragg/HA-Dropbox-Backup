@@ -11,7 +11,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - name: "Checkout the repository"
+        uses: actions/checkout@v4
+        
+      - name: "Adjust version number"
+        shell: "bash"
+        run: |
+          yq -i -o json '.version="${{ github.event.release.tag_name }}"' \
+            "${{ github.workspace }}/custom_components/dropboxbackup/manifest.json"
+            
       - uses: dexwritescode/release-on-merge-action@v1
         with:
           version-increment-strategy: patch
