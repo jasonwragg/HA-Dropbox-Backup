@@ -28,12 +28,8 @@ class DropboxBackupAgent(BackupAgent):
         self._dbx = None
 
     async def _get_dbx(self):
-        """Return a Dropbox client, refreshing the token if needed."""
-        if self._dbx:
-            _LOGGER.debug("Using cached Dropbox client")  # ①
-            return self._dbx
-
-        # 1) Get HA’s OAuth2 implementation
+        """Return a Dropbox client with a fresh access token."""
+        # Always refresh the token to avoid using an expired one
         impl = await async_get_config_entry_implementation(self.hass, self.entry)
         _LOGGER.debug("Got OAuth2 impl: %s", impl)  # ②
 
@@ -68,9 +64,10 @@ class DropboxBackupAgent(BackupAgent):
         # 5) Lazy-import Dropbox SDK
         import dropbox
 
-        self._dbx = dropbox.Dropbox(oauth2_access_token=access_token)  # ⑨
+        dbx = dropbox.Dropbox(oauth2_access_token=access_token)  # ⑨
+        self._dbx = dbx
         _LOGGER.info("Dropbox client instantiated successfully")  # ⑩
-        return self._dbx
+        return dbx
 
     async def async_list_backups(self, **kwargs) -> list[AgentBackup]:
         """List all backups in the configured Dropbox folder."""
