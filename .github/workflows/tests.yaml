@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          ./scripts/setup
+          python -m pip install pytest flake8
+      - name: Run ruff
+        run: ruff .
+      - name: Run flake8
+        run: flake8 .
+      - name: Run tests
+        run: pytest

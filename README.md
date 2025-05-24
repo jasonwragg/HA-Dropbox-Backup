@@ -93,6 +93,23 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 
 Contributions are welcome! Please fork this repo, follow Home Assistant’s [integration quality guidelines](https://developers.home-assistant.io/docs/integration_quality_scale/), and submit a pull request.
 
+## Running Tests Locally
+
+Install the Home Assistant development environment and test requirements:
+
+```bash
+./scripts/setup
+pip install pytest flake8
+```
+
+Then run linting and the test suite:
+
+```bash
+ruff .
+flake8 .
+pytest
+```
+
 ---
 
 ## License
