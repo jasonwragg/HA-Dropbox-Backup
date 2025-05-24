@@ -13,6 +13,11 @@ from .const import DOMAIN, CONF_FOLDER
 
 _LOGGER = logging.getLogger(__name__)
 
+# Dropbox recommends 4 MB chunks for upload sessions.
+CHUNK_SIZE = 4 * 1024 * 1024
+# Files up to 150 MB can be uploaded in a single call.
+SIMPLE_UPLOAD_LIMIT = 150 * 1024 * 1024
+
 
 class DropboxBackupAgent(BackupAgent):
     """This module provides a BackupAgent implementation that interacts with Dropbox to list."""
@@ -130,50 +135,63 @@ class DropboxBackupAgent(BackupAgent):
             raise BackupAgentError from err
 
     async def async_upload_backup(self, *, open_stream, backup, **kwargs) -> None:
-        """Uploads a snapshot in chunks using Dropbox upload sessions."""
-        # Decode the HA UI ID back to a valid path
+        """Upload a snapshot using the most efficient Dropbox API."""
         decoded = urllib.parse.unquote(backup.backup_id)
         path = f"/{decoded}"
-        _LOGGER.debug("Uploading large backup to %s in chunks", path)
+        _LOGGER.debug("Uploading backup to %s", path)
 
         try:
-            # Lazily get a fresh Dropbox client
             dbx = await self._get_dbx()
 
-            # 1) Open the HA snapshot stream
             stream = await open_stream()
 
-            # 2) Read the first chunk and start a session
-            first_chunk = await stream.__anext__()  # get first async chunk
+            # For small files we can upload in a single request
+            if backup.size <= SIMPLE_UPLOAD_LIMIT:
+                data = bytearray()
+                async for chunk in stream:
+                    data.extend(chunk)
+
+                await self.hass.async_add_executor_job(
+                    dbx.files_upload,
+                    bytes(data),
+                    path,
+                )
+                _LOGGER.info("Uploaded %s in one request (%d bytes)", path, backup.size)
+                return
+
+            # Otherwise use an upload session
+            first_chunk = await stream.__anext__()
             session_start = await self.hass.async_add_executor_job(
-                dbx.files_upload_session_start, first_chunk
+                dbx.files_upload_session_start,
+                first_chunk,
             )
             session_id = session_start.session_id
             offset = len(first_chunk)
 
-            # 3) Append all subsequent chunks
-            from dropbox.files import UploadSessionCursor
+            from dropbox.files import UploadSessionCursor, CommitInfo
 
+            buffer = bytearray()
             async for chunk in stream:
-                cursor = UploadSessionCursor(session_id, offset)
-                await self.hass.async_add_executor_job(
-                    dbx.files_upload_session_append_v2,
-                    chunk,
-                    cursor,
-                )
-                offset += len(chunk)
+                buffer.extend(chunk)
+                if len(buffer) >= CHUNK_SIZE:
+                    cursor = UploadSessionCursor(session_id, offset)
+                    await self.hass.async_add_executor_job(
+                        dbx.files_upload_session_append_v2,
+                        bytes(buffer),
+                        cursor,
+                    )
+                    offset += len(buffer)
+                    buffer.clear()
 
-            # 4) Finish the session, committing to the target path
-            from dropbox.files import CommitInfo
-
-            commit = CommitInfo(path)
             cursor = UploadSessionCursor(session_id, offset)
+            commit = CommitInfo(path)
             await self.hass.async_add_executor_job(
                 dbx.files_upload_session_finish,
-                b"",  # no extra data since all appended
+                bytes(buffer),
                 cursor,
                 commit,
             )
+            offset += len(buffer)
 
             _LOGGER.info("Completed chunked upload for %s (%d bytes)", path, offset)
 

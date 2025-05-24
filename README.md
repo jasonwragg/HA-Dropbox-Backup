@@ -10,6 +10,7 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
 - **Config Flow**: Authenticate with Dropbox using OAuth 2 via Home Assistant Application Credentials.
 - **Pagination Handling**: Correctly pages through Dropbox folder listings to show every snapshot.
 - **Error Logging**: Provides detailed debug logs for upload, download, and metadata operations.
+- **Chunked Uploads**: Streams backups to Dropbox in 4 MB chunks for faster uploads of large files.
 
 ---
 
