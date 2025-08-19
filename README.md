@@ -61,12 +61,13 @@ A Home Assistant custom integration that adds a **Dropbox** backup agent to the 
    - `files.content.write`
    - `files.content.read`
    - `files.metadata.read`.
-4. Note your **App key** and **App secret** from the app overview page.
+4. Add "https://my.home-assistant.io/redirect/oauth" as a valid redirect uri.
+5. Note your **App key** and **App secret** from the app overview page.
 
 ### 2. Add Application Credentials and Authorize
 
-1. In Home Assistant, open **Settings → System → Application Credentials**.
-2. Click **Add Credential**, set **Name** to `dropbox`, and enter your **App key** and **App secret**.
+1. In Home Assistant, open **Settings → Devices and Services → Three Dots in the top right → Application Credentials**.
+2. Click **Add Credential**, select the Dropbox Backup integration, set the **Name** to `dropbox`, and enter your **App key** and **App secret**.
 3. Then open **Settings → System → Integrations**, click **+ Add integration**, search for **Dropbox Backup**, and follow the OAuth sign-in flow.
 4. After granting Dropbox access, click **Submit**, then **Finish**.
 
