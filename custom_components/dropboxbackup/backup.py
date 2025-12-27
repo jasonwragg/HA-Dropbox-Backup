@@ -14,7 +14,7 @@ from .const import DOMAIN, CONF_FOLDER
 _LOGGER = logging.getLogger(__name__)
 
 # Dropbox recommends 4 MB chunks for upload sessions.
-CHUNK_SIZE = 4 * 1024 * 1024
+CHUNK_SIZE = 8 * 1024 * 1024
 # Files up to 150 MB can be uploaded in a single call.
 SIMPLE_UPLOAD_LIMIT = 150 * 1024 * 1024
 
