@@ -134,7 +134,9 @@ class DropboxBackupAgent(BackupAgent):
             )
             raise BackupAgentError from err
 
-    async def async_upload_backup(self, *, open_stream, backup, **kwargs) -> None:
+    async def async_upload_backup(
+        self, *, open_stream, backup, on_progress=None, **kwargs
+    ) -> None:
         """Upload a snapshot using the most efficient Dropbox API."""
         decoded = urllib.parse.unquote(backup.backup_id)
         path = f"/{decoded}"
@@ -144,18 +146,24 @@ class DropboxBackupAgent(BackupAgent):
             dbx = await self._get_dbx()
 
             stream = await open_stream()
+            bytes_uploaded = 0
 
             # For small files we can upload in a single request
             if backup.size <= SIMPLE_UPLOAD_LIMIT:
                 data = bytearray()
                 async for chunk in stream:
                     data.extend(chunk)
+                    bytes_uploaded += len(chunk)
+                    if on_progress:
+                        on_progress(bytes_uploaded=bytes_uploaded)
 
                 await self.hass.async_add_executor_job(
                     dbx.files_upload,
                     bytes(data),
                     path,
                 )
+                if on_progress:
+                    on_progress(bytes_uploaded=bytes_uploaded)
                 _LOGGER.info("Uploaded %s in one request (%d bytes)", path, backup.size)
                 return
 
@@ -167,6 +175,9 @@ class DropboxBackupAgent(BackupAgent):
             )
             session_id = session_start.session_id
             offset = len(first_chunk)
+            bytes_uploaded = len(first_chunk)
+            if on_progress:
+                on_progress(bytes_uploaded=bytes_uploaded)
 
             from dropbox.files import UploadSessionCursor, CommitInfo
 
@@ -181,6 +192,9 @@ class DropboxBackupAgent(BackupAgent):
                         cursor,
                     )
                     offset += len(buffer)
+                    bytes_uploaded += len(buffer)
+                    if on_progress:
+                        on_progress(bytes_uploaded=bytes_uploaded)
                     buffer.clear()
 
             cursor = UploadSessionCursor(session_id, offset)
@@ -192,6 +206,9 @@ class DropboxBackupAgent(BackupAgent):
                 commit,
             )
             offset += len(buffer)
+            bytes_uploaded += len(buffer)
+            if on_progress:
+                on_progress(bytes_uploaded=bytes_uploaded)
 
             _LOGGER.info("Completed chunked upload for %s (%d bytes)", path, offset)
 
